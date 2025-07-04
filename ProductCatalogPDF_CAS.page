@@ -1,0 +1,290 @@
+<apex:page Controller="ProductCatalogPDF_CASController" renderAs="pdf" showHeader="false" applyBodyTag="false" applyHtmlTag="false" contentType="text/html;charset=UTF-8">
+    <html>
+        <head>
+            <style>
+                /* ========== GLOBAL STYLES ========== */
+                body {
+                    font-family: Arial, sans-serif;
+                    font-size: 10px;
+                    line-height: 1.2;
+                    margin: 0;
+                    padding: 0;
+                }
+                /* ========== PAGE LAYOUT ========== */
+                @page {
+                    size: A4;
+                    @bottom-center {
+                        content: element(footer);
+                    }
+                }
+                @page:first{
+                    background-image: url('/resource/Cas_PDF_Images/Cas_Images/{!coverImage}');   
+                    background-repeat: no-repeat;
+                    background-position: center;
+                    background-size: cover;
+                }
+                @page last_page { 
+                    @bottom-center {
+                        content: none;
+                    }
+                }
+                .last-page {
+                    page: last_page; 
+                    text-align: center; 
+                    font-size: 10px;
+                }
+                .last-page-footer{
+                    margin-top: 8cm;
+                }
+                .last-page-footer-logo img{
+                    height: 100px;
+                }
+                .last-page-footer-content{
+                    font-size: 10px;
+                    margin-top: 14cm;
+                }
+                .last-page-border{
+                    border-top: 1px solid #000; 
+                    width: 100%; 
+                    margin: 10px 0;
+                }
+                /* ========== FOOTER ========== */
+                .footer {      
+                    position: running(footer); 
+                    line-height: 1;
+                    font-size: 8px;
+                    margin-bottom: 200px;
+                }
+                .footer-table {
+                    width: 100%;
+                    border-top: 1px solid gray;
+                }
+                .footer-address{
+                    width: 50%;
+                }
+                .footer-page-number {
+                    text-align: left;
+                }
+                .footer-pricing-date {
+                    text-align: left;
+                }
+                .page-number:before {
+                    content: counter(page);
+                }
+                /* ========== TABLE OF CONTENTS ========== */
+                .toc-header {
+                    text-align: center;
+                    font-size: 20px;
+                    font-weight: normal;
+                    padding: 30px;
+                }
+                .toc-table {
+                    font-size: 14px;
+                    width: 100%;
+                    -Fs-table-paginate: paginate;
+                    border-collapse: collapse;
+                    border-spacing: 0;
+                    page-break-after: always; 
+                }
+                .toc-table tr td {
+                    border-bottom: 1px solid #ccc;
+                }
+                .toc-table tr {
+                    height: 40px; 
+                    page-break-inside: avoid; /*satır ortasından bölünmeyi engelle*/
+                }
+                .toc-title {
+                    font-weight: bold;
+                    width: 45%;
+                }
+                .toc-sub-title {
+                    font-size: 12px;
+                    width: 50%;
+                }
+                .toc-page-number {
+                    text-align: right;
+                }
+                /* ========== CONTENT LAYOUT STYLES ========== */
+                .catalog-container{
+                    page-break-before: always;
+                }
+                .catalog-header {
+                    margin-bottom: 15px;
+                }
+                .main-title {
+                    font-size: 24px;
+                    font-weight: bold;
+                    margin-bottom: 5px;
+                }
+                .sub-title {
+                    font-size: 14px;
+                    margin-bottom: 10px;
+                }
+                .catalog-image-container {
+                    text-align: center;
+                }
+                .catalog-image{
+                    width: 450px;
+                }
+                .section-title {
+                    font-size: 10px;
+                    color: red;
+                    margin: 10px 0 4px 0;
+                }
+                /* ========== PRODUCT TABLE STYLES ========== */
+                .product-table {
+                    width: 100%;
+                    text-align: center;
+                    font-size: 9px;
+                }
+                .product-table tr {
+                    page-break-inside: avoid;
+                }
+                .product-table td {
+                    padding: 2px;
+                }
+                .product-table .row-label {
+                    text-align: left;
+                    padding-left: 10px;
+                    width: 130px;
+                }
+                .product-table.correction-table td {
+                    width: 10px;
+                }
+                .gray-row {
+                    background-color: rgb(215, 215, 215);
+                }
+                .bold-row {
+                    font-weight: bold;
+                }
+                .model-first-row {
+                    background-color: rgb(51, 63, 72);
+                    color: white; 
+                }
+                .product-block {
+                    page-break-inside: avoid;
+                }
+                .product-table.nitrogen-table th {
+                    font-weight: normal;
+                    background-color: rgb(215, 215, 215);
+                }
+                /* ========== UTILITY CLASSES ========== */
+                .highlight-text {
+                    color: red;
+                }
+                .bold-text{
+                    font-weight: bold;
+                }
+            </style>
+        </head>
+        <body>
+            <!-- COVER PAGE -->
+            <div style="page-break-after: always;">
+                <span>&nbsp;</span>
+            </div>
+
+            <!-- FOOTER -->
+            <div class="footer">
+                <table class="footer-table">
+                    <tr>
+                        <td class="footer-address"> 
+                            {!brandName} / {!socialInfo.Website__c} <br/> {!socialInfo.Address__c} <br/> T: {!socialInfo.Phone__c}
+                        </td>
+                        <td class="footer-page-number">
+                            <span class="page-number" />
+                        </td>
+                        <td class="footer-pricing-date">
+                            <span style="float: right;">
+                                Pricing: {!YEAR(TODAY())}<br/>
+                                Rev: {!catalogVersion}
+                            </span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- TABLE OF CONTENTS -->
+            <table class="toc-table">
+                <thead>
+                    <tr>
+                        <th colspan="3">
+                            <div class="toc-header">TABLE OF CONTENTS</div>
+                        </th>
+                    </tr>    
+                </thead>
+                <tbody>
+                    <apex:variable var="tocIndex" value="{!0}" />
+                    <apex:repeat value="{!titles}" var="title">
+                        <tr>
+                            <td class="toc-title">{!title}</td>
+                            <td class="toc-sub-title">{!subTitles[tocIndex]}</td>
+                            <td class="toc-page-number">{!pageNumbers[tocIndex]}</td>
+                        </tr>
+                        <apex:variable var="tocIndex" value="{!tocIndex+1}" />
+                    </apex:repeat>
+                </tbody>
+            </table> 
+            
+            <!-- MAIN CONTENT PAGES -->
+            <apex:repeat value="{!productCatalogs}" var="catalogItem">
+                <div class="catalog-container">
+                    <!-- HEADER -->
+                    <div class="catalog-header">
+                        <div class="main-title">{!catalogItem.Serial_Header__c}</div>
+                        <div class="sub-title">{!catalogItem.Serial_Sub_Header__c}</div>
+                        <apex:outputText value="{!catalogItem.Serial_Sub_Text__c}" escape="false">
+                        </apex:outputText>
+                    </div>
+            
+                    <!-- IMAGE -->
+                    <apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(catalogItem.Serial_Image_Path__c))}">
+                        <div class="catalog-image-container">
+                            <apex:image url="{!URLFOR($Resource.Cas_PDF_Images, 'Cas_Images/' & catalogItem.Serial_Image_Path__c)}" styleClass="catalog-image"/>
+                        </div>
+                    </apex:outputPanel>
+                    
+                    <!-- PRODUCT TABLES -->
+                    <c:CasProductSpecsTableComp sectionType="ModelSpec" sectionTitle="Model and Specifications" sectionTable="{!catalogItem.ModelAndSpecifications__r}" 
+                        currencySymbol="{!currencySymbol}" isRendered="{!catalogItem.ModelAndSpecifications__r.size > 0}" dynamicColumnIndexes="{!dynamicColumnIndexes}" serialTablePriceMap="{!serialTablePriceMap}"/>
+
+                    <c:CasProductSpecsTableComp sectionType="ShipDimension" sectionTitle="Shipping Dimensions and Weights" sectionTable="{!catalogItem.ShippingDimensionsAndWeights__r}"
+                            isRendered="{!catalogItem.ShippingDimensionsAndWeights__r.size > 0}" dynamicColumnIndexes="{!dynamicColumnIndexes}"/>
+
+                    <c:CasProductSpecsTableComp sectionType="FilterElement" sectionTitle="Filter And Elements" sectionTable="{!catalogItem.FiltersAndElements__r}"
+                        currencySymbol="{!currencySymbol}" subNote="{!catalogItem.FiltersAndElementsSubNote__c}" isRendered="{!catalogItem.FiltersAndElements__r.size > 0}" dynamicColumnIndexes="{!dynamicColumnIndexes}" serialTablePriceMap="{!serialTablePriceMap}"/>
+
+                    <c:CasProductSpecsTableComp sectionType="GeneralCond" sectionTitle="General Working Conditions" sectionTable="{!catalogItem.GeneralWorkingConditions__r}"
+                        subNote="{!catalogItem.GeneralWorkingConditionsSubNote__c}" dynamicColumnIndexes="{!dynamicColumnIndexes}" isRendered="{!catalogItem.GeneralWorkingConditions__r.size > 0}"/>
+
+                    <c:CasProductSpecsTableComp sectionType="Correction" sectionTitle="Correction Factors" sectionTable="{!catalogItem.CorrectionFactors__r}"
+                        subNote="{!catalogItem.CorrectionFactorsSubNote__c}" isRendered="{!catalogItem.CorrectionFactors__r.size > 0}" dynamicColumnIndexes="{!dynamicColumnIndexes}"/>
+
+                    <c:CasProductSpecsTableComp sectionType="Option" sectionTitle="Options" sectionTable="{!catalogItem.OptionCollections__r}" 
+                        currencySymbol="{!currencySymbol}" isRendered="{!catalogItem.OptionCollections__r.size > 0}" dynamicColumnIndexes="{!dynamicColumnIndexes}" serialTablePriceMap="{!serialTablePriceMap}"/>
+
+                    <c:CasProductSpecsTableComp sectionType="Accessory" sectionTitle="Accessories" sectionTable="{!catalogItem.AccessoryCollections__r}"
+                        subNote="{!catalogItem.AccessoriesSubNote__c}" currencySymbol="{!currencySymbol}" isRendered="{!catalogItem.AccessoryCollections__r.size > 0}" dynamicColumnIndexes="{!dynamicColumnIndexes}" serialTablePriceMap="{!serialTablePriceMap}"/>
+
+                    <c:CasProductSpecsTableComp sectionType="Nitro" sectionTitle="Nitrogen and Compressed Air Flow Tables as per Purity Level" sectionTable="{!catalogItem.NitrogenCompressedAirCollections__r}"
+                        tableHeader="Nitrogen Flow (scfm)" isRendered="{!catalogItem.NitrogenCompressedAirCollections__r.size > 0}" dynamicColumnIndexes="{!dynamicColumnIndexes}"/> 
+
+                    <c:CasProductSpecsTableComp sectionType="NitroReq" sectionTitle="" sectionTable="{!catalogItem.NitrogenCompressedRequireds__r}" 
+                        tableHeader="Required Compressed Air Flow (scfm)" isRendered="{!catalogItem.NitrogenCompressedRequireds__r.size > 0}" dynamicColumnIndexes="{!dynamicColumnIndexes}"/>
+                </div>
+            </apex:repeat>
+
+            <!-- BACK COVER -->
+            <div class="last-page">
+                <div class="last-page-footer">
+                    <div class="last-page-footer-logo">
+                        <apex:image url="{!URLFOR($Resource.Cas_PDF_Images, 'Cas_Images/' & BrandLogo)}"/>
+                    </div>
+                    <div class="last-page-footer-content">
+                        <b>{!brandName}</b><br/> {!socialInfo.Address__c}<br/> T: {!socialInfo.Phone__c}<br/> <b>{!socialInfo.Website__c}</b>
+                    </div>
+                </div>
+                <div class="last-page-border"></div>
+            </div>
+        </body>
+    </html>
+</apex:page>

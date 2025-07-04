@@ -1,0 +1,141 @@
+<template>
+    <lightning-card title="Select PDF Generation Options" icon-name="standard:catalog">
+        <template lwc:if={isLoading}>
+            <lightning-spinner alternative-text="Loading" variant="brand" size="medium">
+            </lightning-spinner>
+        </template>
+        <div slot="actions">
+            <lightning-button label="All PDFs" onclick={navigateToPDFLogs} variant="neutral" icon-name="utility:file"
+                icon-position="left" style="margin-right: 0.5rem;">
+            </lightning-button>
+            <lightning-button if:true={currentPdfLog} label="Preview Current PDF" onclick={handlePreviewPDF} variant="brand" icon-name="utility:preview"
+                icon-position="left" style="margin-right: 0.5rem;">
+            </lightning-button>
+            <lightning-button label="Generate PDF" onclick={handleConfirmGeneratePDF} variant="destructive" icon-name="utility:download"
+                icon-position="left"></lightning-button>
+        </div>
+        
+        <lightning-layout multiple-rows class="slds-p-around_medium">
+            <lightning-layout-item size="12" large-device-size="3">
+                <lightning-layout multiple-rows>
+                    <!-- System Radio Group -->
+                    <lightning-layout-item size="12" class="slds-m-bottom_small">
+                        <lightning-radio-group name="type" label="Select System" options={systemOptions}
+                            onchange={handleSystemChange} class="form-element" required>
+                        </lightning-radio-group>
+                    </lightning-layout-item>
+
+                    <!-- Discount / Markup Input -->
+                    <lightning-layout-item size="12" class="slds-m-bottom_small">
+                        <lightning-layout class="form-element">
+                            <lightning-layout-item size="6">
+                                <lightning-input lwc:ref="discount" type="number" label="Discount (%)"
+                                    onblur={handleDiscountChange} placeholder="e.g., 10"
+                                    field-level-help={DISCOUNT_ERROR_MESSAGE} class="slds-p-right_small"
+                                    max={MAX_DISCOUNT}></lightning-input>
+                            </lightning-layout-item>
+                            <lightning-layout-item size="6">
+                                <lightning-combobox lwc:ref="quickDiscountSelect" label="Quick Select"
+                                    options={discountOptions} onchange={handleQuickDiscountSelect}></lightning-combobox>
+                            </lightning-layout-item>
+                        </lightning-layout>
+                    </lightning-layout-item>
+
+                    <!-- District Combobox -->
+                    <lightning-layout-item size="12" class="slds-m-bottom_small">
+                        <lightning-combobox label="District" options={districtOptions} onchange={handleDistrictChange}
+                            class="form-element" required>
+                        </lightning-combobox>
+                    </lightning-layout-item>
+
+                    <!-- Sales Org Combobox -->
+                    <lightning-layout-item size="12" class="slds-m-bottom_small">
+                        <lightning-combobox lwc:ref="salesOrg" label="Sales Org" options={salesOrgOptions} class="form-element" required>
+                        </lightning-combobox>
+                    </lightning-layout-item>
+
+                    <!-- Distribution Channel Combobox -->
+                    <lightning-layout-item size="12" class="slds-m-bottom_small">
+                        <lightning-combobox lwc:ref="distChannel" label="Distribution Channel" options={distChannelOptions}
+                            class="form-element" required>
+                        </lightning-combobox>
+                    </lightning-layout-item>
+
+                    <!-- PDF Name Input -->
+                    <lightning-layout-item size="12">
+                        <lightning-input lwc:ref="pdfName" type="text" label="PDF Name" class="form-element" required>
+                        </lightning-input>
+                    </lightning-layout-item>
+
+                </lightning-layout>
+            </lightning-layout-item>
+
+            <lightning-layout-item size="12" large-device-size="9">
+                <lightning-layout multiple-rows class="slds-p-around_medium">
+                    <!-- Series Collection Combobox -->
+                    <lightning-layout-item size="12">
+                        <div class="slds-page-header slds-page-header_record-home">
+                            <div class="slds-page-header__row">
+                                <div class="slds-page-header__col-title">
+                                    <div class="slds-page-header__name">
+                                        <div class="slds-page-header__name-title">
+                                            <h1>
+                                                <span><b>Serial Collections</b></span>
+                                            </h1>
+                                            <h3 class="slds-text-title slds-m-bottom_small slds-m-top_small">
+                                                <code>{selectedSerialRowCount}</code> item(s) selected in filtered
+                                                results. (Note: Selecting or removing an item affects the entire group.)
+                                            </h3>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-page-header__col-actions">
+                                    <lightning-input type="search" onchange={handleSearch}
+                                        class="slds-m-bottom_small"></lightning-input>
+                                </div>
+                            </div>
+                            <div class="slds-page-header__row slds-page-header__row_gutters slds-is-relative">
+                                <template lwc:if={isLoadingSerialTable}>
+                                    <lightning-spinner alternative-text="Loading" size="small">
+                                    </lightning-spinner>
+                                </template>
+                                <div class="slds-page-header__col-details">
+                                    <div style="height: 500px;">
+                                        <lightning-datatable key-field="Id" data={filteredSerial}
+                                            columns={serialColumns} draft-values={draftSerialValues}
+                                            onsave={handleSerialTableSave} onrowselection={handleSerialRowSelection}
+                                            selected-rows={preSelectedSerialRowIds} errors={errors}>
+                                        </lightning-datatable>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </lightning-layout-item>
+                </lightning-layout>
+            </lightning-layout-item>
+        </lightning-layout>
+    </lightning-card>
+
+    <template if:true={showPdfModal}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_medium">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close"
+                        onclick={closePdfModal}>
+                        <lightning-icon icon-name="utility:close" size="small" alternative-text="close"
+                            class="slds-button__icon slds-button__icon_large"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 class="slds-text-heading_medium">{pdfModalHeader}</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_small slds-is-relative">
+                    <template if:true={isLoadingPDF}>
+                        <lightning-spinner alternative-text="Loading PDF..." size="medium"></lightning-spinner>
+                    </template>
+                    <iframe src={pdfUrl} style="width:100%;height: 75vh" onload={onPdfLoadComplete}></iframe>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

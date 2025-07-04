@@ -1,0 +1,77 @@
+<apex:component>
+    <apex:attribute name="sectionType" type="String" description="sectionType is required" required="true" />
+    <apex:attribute name="sectionTitle" type="String" description="sectionTitle is required" required="true" />
+    <apex:attribute name="sectionTable" type="sObject[]" description="sectionTable is required" required="true" />
+    <apex:attribute name="tableHeader" type="String" description="tableHeader is optional" required="false" />
+    <apex:attribute name="currencySymbol" type="String" description="currencySymbol is optional" required="false" />
+    <apex:attribute name="isRendered" type="Boolean" description="isRendered is required" required="true" />
+    <apex:attribute name="subNote" type="String" description="subNote is optional" required="false" />
+    <apex:attribute name="serialTablePriceMap" type="map" description="serialTablePriceMap is optional" required="false" />
+    <apex:attribute name="dynamicColumnIndexes" type="Integer[]" description="dynamicColumnIndexes is optional" required="false"
+    />
+
+    <apex:outputPanel rendered="{!isRendered}">
+        <div class="product-block">
+            <div class="section-title">{!sectionTitle}</div>
+            <table class="product-table {!IF(sectionType == 'Correction', 'correction-table', '')} {!IF(CONTAINS(sectionType, 'Nitro'), 'nitrogen-table', '')}">
+                <apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(tableHeader))}">
+                    <thead class="nitrogen-table">
+                        <tr>
+                            <th class="row-label">Model</th>
+                            <th colspan="9">{!tableHeader}</th>
+                        </tr>
+                    </thead>
+                </apex:outputPanel>
+                <tbody>
+                    <apex:variable var="frstItem" value="{!sectionTable[0]}" />
+                    <apex:variable var="rowNum" value="{!0}" />
+                    <apex:repeat value="{!sectionTable}" var="item">
+                        <apex:variable var="isPriceLine" value="{!item['Price_Line__c'] == 'True'}" />
+                        <apex:variable var="currCode" value="{!IF(isPriceLine, currencySymbol, '')}" />
+                        <apex:variable var="rowClass" value="{!IF(AND(sectionType = 'ModelSpec', rowNum == 0), 'model-first-row', IF(MOD(rowNum, 2) == 1, '', 'gray-row'))}"
+                        />
+                        <apex:variable var="boldClass" value="{!IF(isPriceLine, ' bold-row', '')}" />
+
+                        <tr class="{!rowClass} {!boldClass}">
+
+                            <!-- Model Column -->
+                            <td class="row-label">
+                                {!item['Content__c']}
+                                <apex:outputText rendered="{!isPriceLine}" value=" ({!currCode})" />
+                            </td>
+
+                            <!-- Dynamic Columns: 1, 2, 3, 4, 5, 6 -->
+                            <apex:repeat value="{!dynamicColumnIndexes}" var="colIndex">
+                                <apex:outputPanel layout="none" rendered="{!NOT(ISNULL(frstItem['Column_' & TEXT(colIndex) & '__c']))}">
+                                    <td>
+                                        {!currCode} {!IF(isPriceLine, serialTablePriceMap[item['Id'] & '_' & item['Product_' & TEXT(colIndex) & '__c']], item['Column_'
+                                        & TEXT(colIndex) & '__c'] )}
+                                    </td>
+                                </apex:outputPanel>
+                            </apex:repeat>
+
+                            <!-- Only Correction & Nitro Columns -->
+                            <apex:outputPanel layout="none" rendered="{!OR(sectionType == 'Correction', BEGINS(sectionType, 'Nitro'))}">
+                                <td>{!item['Column_7__c']}</td>
+                                <td>{!item['Column_8__c']}</td>
+                                <td>{!item['Column_9__c']}</td>
+                            </apex:outputPanel>
+
+                            <!-- Only Correction Columns -->
+                            <apex:outputPanel layout="none" rendered="{!sectionType == 'Correction'}">
+                                <td>{!item['Column_10__c']}</td>
+                                <td>{!item['Column_11__c']}</td>
+                                <td>{!item['Column_12__c']}</td>
+                                <td>{!item['Column_13__c']}</td>
+                                <td>{!item['Column_14__c']}</td>
+                                <td>{!item['Column_15__c']}</td>
+                            </apex:outputPanel>
+                        </tr>
+                        <apex:variable var="rowNum" value="{!rowNum+1}" />
+                    </apex:repeat>
+                </tbody>
+            </table>
+        </div>
+        <apex:outputText value="{!subNote}" escape="false"></apex:outputText>
+    </apex:outputPanel>
+</apex:component>
